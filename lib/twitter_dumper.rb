@@ -19,9 +19,11 @@ module TwitterDumper
         url = @url.gsub("{since}", date.to_s).gsub("{until}", (date + 1).to_s)
         puts "page #{counter} - #{url}"
         @driver.get(url)
-        resize_window!
-        current_shot(counter)
-        counter += 1
+        if @driver.execute_script("return document.getElementsByClassName('SearchEmptyTimeline').length") == 0
+          resize_window!
+          current_shot(counter)
+          counter += 1
+        end
       end
     rescue
       puts $!
