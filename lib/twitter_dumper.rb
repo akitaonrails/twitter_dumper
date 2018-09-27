@@ -13,28 +13,43 @@ module TwitterDumper
       @driver = Selenium::WebDriver.for(:chrome, options: options)
       @slaves = (1..4).map { Selenium::WebDriver.for(:chrome, options: options) }
       @shot_path = "#{shot_path}/"
+      @retry_count = 3
     end
 
     def pray_and_run!
       counter = 1
       (@since_date..Date.today).each do |date|
-        url = @url.gsub("{since}", date.to_s).gsub("{until}", (date + 1).to_s)
-        puts url
-        @driver.get(url)
-        @driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") # just in case there is more results in the same day and needs paginating, but only gets 1 extra page ...
-        sleep(0.5)
-        if @driver.execute_script("return document.getElementsByClassName('SearchEmptyTimeline').length") == 0
-          urls = @driver.execute_script("var links = document.getElementsByClassName('js-permalink'); var urls = []; for(var i = 0; i < links.length; i ++ ) { urls[i] = links[i].href}; return urls")
-          (urls || []).each do |url|
-            @driver.get(url)
-            resize_window!
-            current_shot(counter, date.to_s)
-            counter += 1
+        begin
+          url = @url.gsub("{since}", date.to_s).gsub("{until}", (date + 1).to_s)
+          puts url
+          @driver.get(url)
+          @driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") # just in case there is more results in the same day and needs paginating, but only gets 1 extra page ...
+          sleep(0.5)
+          if @driver.execute_script("return document.getElementsByClassName('SearchEmptyTimeline').length") == 0
+            urls = @driver.execute_script("var links = document.getElementsByClassName('js-permalink'); var urls = []; for(var i = 0; i < links.length; i ++ ) { urls[i] = links[i].href}; return urls")
+            (urls || []).each do |url|
+              @driver.get(url)
+              resize_window!
+              current_shot(counter, date.to_s)
+              counter += 1
+            end
+          end
+        rescue
+          puts $!
+          if (@retry_count -= 1) > 0
+            sleep 1
+            puts "Retrying"
+            retry
+          else
+            @retry_count = 3
+            puts "Skipping after retries"
+            next
           end
         end
       end
     rescue
       puts $!
+      puts "Unrecoverable error"
     ensure
       puts "probably done!"
     end
