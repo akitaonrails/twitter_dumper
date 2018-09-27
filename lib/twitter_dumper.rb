@@ -11,6 +11,7 @@ module TwitterDumper
       @url = "https://twitter.com/search?f=tweets&vertical=default&q=from%3A#{username}%20since%3A{since}%20until%3A{until}include%3Aretweet&src=typd"
       @options = Selenium::WebDriver::Chrome::Options.new(args: ['headless'])
       @driver = Selenium::WebDriver.for(:chrome, options: options)
+      @slaves = (1..4).map { Selenium::WebDriver.for(:chrome, options: options) }
       @shot_path = "#{shot_path}/"
     end
 
@@ -22,7 +23,7 @@ module TwitterDumper
         @driver.get(url)
         @driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") # just in case there is more results in the same day and needs paginating, but only gets 1 extra page ...
         sleep(0.5)
-        urls = if @driver.execute_script("return document.getElementsByClassName('SearchEmptyTimeline').length") == 0
+        if @driver.execute_script("return document.getElementsByClassName('SearchEmptyTimeline').length") == 0
           urls = @driver.execute_script("var links = document.getElementsByClassName('js-permalink'); var urls = []; for(var i = 0; i < links.length; i ++ ) { urls[i] = links[i].href}; return urls")
           (urls || []).each do |url|
             @driver.get(url)

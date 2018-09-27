@@ -4,5 +4,5 @@ require "bundler/setup"
 require "twitter_dumper"
 
 puts "Fetching user #{ARGV[0]} - this will take a LONG time and use a LOT of space!"
-dumper = TwitterDumper::Navigator.new(ARGV[0], ARGV[1])
+dumper = TwitterDumper::Navigator.new(ARGV[0], ARGV[1] || "/tmp", ARGV[2] || (Date.today - 3).to_s)
 dumper.pray_and_run!
